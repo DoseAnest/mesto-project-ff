@@ -10,18 +10,18 @@ function createCard({link, name}, removeCard, likeToggle, templateCard) {
     
     return placesItem;
 };
-
+//Функция добавления карточки
 function addCard(item, cardList) {
     cardList.prepend(item); 
 };
 
-// @todo: Функция удаления карточки
+//Функция удаления карточки
 function removeCard(evt) {
     const deleteCard = evt.target.closest('.places__item');
     deleteCard.remove();
 }
 
-
+// Лайк
 function likeToggle(evt) {
     if (evt.target.classList.contains('card__like-button')){
         evt.target.classList.toggle('card__like-button_is-active')

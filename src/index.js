@@ -65,7 +65,7 @@ forms.profile.addEventListener('submit', function (evt) {
     forms.profile.reset();
     togglePopup();
 });
-
+//редактирование карточки
 forms.card.addEventListener('submit', function(evt) {
     evt.preventDefault();
     let newCard = createCard({
