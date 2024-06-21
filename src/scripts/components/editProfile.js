@@ -1,4 +1,4 @@
-export function editProfile(nameProfile, description, profileTitleEl, profileDescriptionEl) {
-    profileTitleEl.textContent = nameProfile.value;
-    profileDescriptionEl.textContent = description.value;
+export function editProfile(inputNameFormProfile, inputDescriptionFormProfile, profileTitleEl, profileDescriptionEl) {
+    profileTitleEl.textContent = inputNameFormProfile.value;
+    profileDescriptionEl.textContent = inputDescriptionFormProfile.value;
 }
