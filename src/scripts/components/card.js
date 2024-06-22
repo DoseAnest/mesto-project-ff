@@ -1,8 +1,9 @@
 
-function createCard({link, name}, removeCard, likeToggle, templateCard, openPopup, popupImageEl, popupCaptionEl) {
+function createCard({link, name}, removeCard, likeToggle, templateCard, openPopupFullImage) {
     const placesItem = templateCard.querySelector('.places__item').cloneNode(true);
-    placesItem.querySelector('.card__image').src = link;
-    placesItem.querySelector('.card__image').alt = name;
+    const cardImageEl = placesItem.querySelector('.card__image');
+    cardImageEl.src = link;
+    cardImageEl.alt = name;
     placesItem.querySelector('.card__title').textContent = name;
 
     const deleteButton = placesItem.querySelector('.card__delete-button');
@@ -10,16 +11,7 @@ function createCard({link, name}, removeCard, likeToggle, templateCard, openPopu
 
     placesItem.addEventListener('click', likeToggle);
 
-    placesItem.addEventListener('click', function(evt) {
-        if (evt.target.classList.contains('card__image')) {
-            popupCaptionEl.textContent = evt.target.alt;
-            popupImageEl.alt = evt.target.alt;
-            popupImageEl.src = evt.target.src;
-
-            const popup = document.querySelector('.popup_type_image');
-            openPopup(popup);
-        }
-    });
+    cardImageEl.addEventListener('click', () => openPopupFullImage({link, name}));
     
     return placesItem;
 };

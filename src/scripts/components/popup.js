@@ -2,20 +2,19 @@ function openPopup(popupEl){
     if (!popupEl) {
         return;
     };
-
     if(!popupEl.classList.contains('popup_is-opened')){
         popupEl.classList.add('popup_is-opened');   
         document.addEventListener('keydown', handleEscape); 
     }
 };
-function closePopup() {
-    const popupEl = document.querySelector('.popup_is-opened')
+function closePopup(popupEl) {
     if (!popupEl) {
         return;
     };
-
-    popupEl.classList.remove('popup_is-opened');
-    document.removeEventListener('keydown', handleEscape);
+    if(popupEl.classList.contains('popup_is-opened')){
+        popupEl.classList.remove('popup_is-opened');
+        document.removeEventListener('keydown', handleEscape);
+    }
 };
 
 function handleEscape (evt){
@@ -24,4 +23,4 @@ function handleEscape (evt){
         closePopup(popup);
     }
 };
-export{openPopup, closePopup}
+export{openPopup, closePopup} 
