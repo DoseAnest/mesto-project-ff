@@ -4,6 +4,7 @@ import {initialCards} from './scripts/utils/cards.js';
 import {openPopup, closePopup} from './scripts/components/popup.js';
 import {createCard, removeCard, likeToggle} from './scripts/components/card.js';
 import {editProfile} from './scripts/components/editProfile.js'
+import {enableValidation, clearValidation} from './scripts//utils/validation.js';
 
 // const popupEl = document.querySelector('.popup_is-opened');
 const templateCard = document.querySelector('#card-template').content;
@@ -16,7 +17,8 @@ const profileTitleEl = document.querySelector('.profile__title');
 const profileDescriptionEl = document.querySelector('.profile__description');
 const forms = {
     profile: document.forms['edit-profile'],
-    card: document.forms['new-place']
+    card: document.forms['new-place'],
+    avatar: document.forms['edit-profile_avatar']
 };
 const inputNameFormProfile = forms.profile.elements.name;
 const inputDescriptionFormProfile = forms.profile.elements.description;
@@ -26,7 +28,28 @@ const inputLinkFormNewCard = forms.card.elements.link;
 const popupTypeNewCard = document.querySelector('.popup_type_new-card');
 const popupFullImage = document.querySelector('.popup_type_image');
 const popupTypeEdit  = document.querySelector('.popup_type_edit');
-const popups = document.querySelectorAll('.popup')
+const popups = document.querySelectorAll('.popup');
+
+const buttonProfileAvatarEdit = document.querySelector('.profile__avatar-edit-button');
+const popupTypeProfileAvatarEdit = document.querySelector('.popup_type_profile_avatar_edit');
+const profileImageEl = document.querySelector('.profile__image');
+const inputProfileLinkImage = forms.avatar.link;
+
+const validationSettings = {
+    formSelector: '.popup__form',
+    inputSelector: '.popup__input',
+    submitButtonSelector: '.popup__button',
+    inactiveButtonClass: 'popup__button_disabled',
+    inputErrorClass: 'popup__input_type_error',
+    errorClass: 'popup__error_visible',
+    rules: {
+        name: /^[a-zA-Zа-яА-ЯёЁ\s-]*$/,
+        description: /^[a-zA-Zа-яА-ЯёЁ\s-]*$/,
+        'place-name': /^[a-zA-Zа-яА-ЯёЁ\s-]*$/,
+    }
+};
+
+enableValidation(validationSettings);
 
 function openPopupFullImage(data){
     captionIFullImagePopup.textContent = data.name;
@@ -50,10 +73,12 @@ profileEditButtonEl.addEventListener('click', function(evt){
     inputNameFormProfile.value = profileTitleEl.textContent;
     inputDescriptionFormProfile.value = profileDescriptionEl.textContent;
     openPopup(popupTypeEdit);
+    clearValidation(validationSettings, forms.profile);
 });
 
 addCardButtonEl.addEventListener('click', function(evt) {
     openPopup(popupTypeNewCard);
+    clearValidation(validationSettings, forms.card);
 });
 
 popups.forEach(popup => {
@@ -82,9 +107,22 @@ forms.card.addEventListener('submit', function(evt) {
     
     addCard(newCard, cardList);
     forms.card.reset();
+    clearValidation(validationSettings, forms.card);
     closePopup(popupTypeNewCard);
 });
 
+function editAvatarProfile(link) {
+    profileImageEl.style.backgroundImage = "url(" + link + ")";
+}
 
+buttonProfileAvatarEdit.addEventListener('click', function() {
+    openPopup(popupTypeProfileAvatarEdit);
+    clearValidation(validationSettings, forms.avatar);
+});
 
-
+forms.avatar.addEventListener('submit', function(evt) {
+    evt.preventDefault();
+    editAvatarProfile(inputProfileLinkImage.value);
+    forms.avatar.reset();
+    closePopup(popupTypeProfileAvatarEdit);
+});
