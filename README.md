@@ -23,7 +23,8 @@
 
 ## Установка
 
-Склонируйте репозиторий:
-
 ```bash
 git clone https://github.com/DoseAnest/mesto-project-ff.git
+npm install
+npm start
+
