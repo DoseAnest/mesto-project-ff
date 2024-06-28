@@ -1,10 +1,20 @@
 // подключил стили и картинки
 import './pages/index.css';
-import {initialCards} from './scripts/utils/cards.js';
 import {openPopup, closePopup} from './scripts/components/popup.js';
-import {createCard, removeCard, likeToggle} from './scripts/components/card.js';
+import {createCard, removeCard} from './scripts/components/card.js';
 import {editProfile} from './scripts/components/editProfile.js'
 import {enableValidation, clearValidation} from './scripts//utils/validation.js';
+import {
+    addUserCardOnServer, 
+    renderUserProfileOnServer, 
+    getUserInfoByServer, 
+    getCardInfoByServer,
+    removeUserCardOnServer,
+    addUserlikesInfoOnServer,
+    removeUserlikesOnServer,
+    renderUserAvatarOnServer
+} from './scripts/components/api.js'
+
 
 // const popupEl = document.querySelector('.popup_is-opened');
 const templateCard = document.querySelector('#card-template').content;
@@ -48,6 +58,15 @@ const validationSettings = {
         'place-name': /^[a-zA-Zа-яА-ЯёЁ\s-]*$/,
     }
 };
+export const config = {
+    baseUrl: 'https://nomoreparties.co/v1/wff-cohort-11',
+    headers: {
+      authorization: 'eed23ad5-f826-4f84-8c2d-d969b17f26f1',
+      'Content-Type': 'application/json'
+    }
+  };
+
+let userId
 
 enableValidation(validationSettings);
 
@@ -58,16 +77,10 @@ function openPopupFullImage(data){
     openPopup(popupFullImage);
 }
 
-//Функция добавления карточки
+//Функция добавления карточки 
 function addCard(item, cardList) {
     cardList.prepend(item); 
 };
-
-// Вывести карточки на страницу
-initialCards.forEach(function(item) { 
-    const createdCard = createCard(item, removeCard, likeToggle, templateCard, openPopupFullImage); 
-    addCard(createdCard, cardList);
-});
 
 profileEditButtonEl.addEventListener('click', function(evt){
     inputNameFormProfile.value = profileTitleEl.textContent;
@@ -92,23 +105,49 @@ popups.forEach(popup => {
 //редактирование профиля
 forms.profile.addEventListener('submit', function (evt) {
     evt.preventDefault();
-    editProfile( inputNameFormProfile, inputDescriptionFormProfile, profileTitleEl, profileDescriptionEl);
-    forms.profile.reset();
-    closePopup(popupTypeEdit);
+    const profileBtnEl = forms.profile.querySelector('.popup__button');
+    profileBtnEl.textContent = profileBtnEl.textContent + '...';
+    renderUserProfileOnServer({
+        name: inputNameFormProfile.value,
+        about: inputDescriptionFormProfile.value
+    })
+    .then(() => {
+        editProfile( inputNameFormProfile, inputDescriptionFormProfile, profileTitleEl, profileDescriptionEl);
+        forms.profile.reset();
+        closePopup(popupTypeEdit);
+    })
+    .finally(()=> {
+        profileBtnEl.textContent = 'Сохранить';
+    })
 });
 
-//добавление карточки
+//добавление карточки на сервер
 forms.card.addEventListener('submit', function(evt) {
     evt.preventDefault();
-    const newCard = createCard({
+    const cardBntEl = forms.card.querySelector('.popup__button');
+    cardBntEl.textContent = cardBntEl.textContent + '...';
+    addUserCardOnServer({
         link: inputLinkFormNewCard.value, 
         name: inputNameFormNewCard.value
-    }, removeCard, likeToggle, templateCard, openPopupFullImage);
-    
-    addCard(newCard, cardList);
-    forms.card.reset();
-    clearValidation(validationSettings, forms.card);
-    closePopup(popupTypeNewCard);
+    }).then((res) => {
+        return res.json()
+    })
+    .then((res) => { 
+        const newCard = createCard({
+            link: res.link, 
+            name: res.name,
+            likes: res.likes,
+            owner: res.owner,
+            cardId: res._id
+        }, removeCard, templateCard, openPopupFullImage, userId, removeUserCardOnServer, addUserlikesInfoOnServer, removeUserlikesOnServer);
+        addCard(newCard, cardList);
+        forms.card.reset();
+        clearValidation(validationSettings, forms.card);
+        closePopup(popupTypeNewCard);
+    })
+    .finally(()=> {
+        cardBntEl.textContent = 'Сохранить';
+    })
 });
 
 function editAvatarProfile(link) {
@@ -122,7 +161,43 @@ buttonProfileAvatarEdit.addEventListener('click', function() {
 
 forms.avatar.addEventListener('submit', function(evt) {
     evt.preventDefault();
-    editAvatarProfile(inputProfileLinkImage.value);
-    forms.avatar.reset();
-    closePopup(popupTypeProfileAvatarEdit);
+    const avatarBntEl = forms.avatar.querySelector('.popup__button');
+    avatarBntEl.textContent = avatarBntEl.textContent + '...';
+    renderUserAvatarOnServer({
+        avatar: inputProfileLinkImage.value
+    })
+    .then(()=> {
+        editAvatarProfile(inputProfileLinkImage.value);
+        forms.avatar.reset();
+        closePopup(popupTypeProfileAvatarEdit);
+    })
+    .finally(()=> {
+        avatarBntEl.textContent = 'Сохранить';
+    })
+});
+
+//API
+function renderProfile(data) {
+    profileTitleEl.textContent = data.name;
+    profileDescriptionEl.textContent = data.about;
+    profileImageEl.style.backgroundImage = "url(" + data.avatar + ")";
+};
+
+Promise.all([
+    getUserInfoByServer(),
+    getCardInfoByServer()
+])
+.then((responses)=> {
+    const userInfoResponse = responses[0];
+    renderProfile(userInfoResponse);
+    userId = userInfoResponse._id;
+
+    const cardInfoResponse = responses[1];
+    cardInfoResponse.reverse().forEach(function({link, name, likes, owner, _id}) { 
+        const createdCard = createCard({link, name, likes, owner, cardId: _id}, removeCard, templateCard, openPopupFullImage, userId, removeUserCardOnServer, addUserlikesInfoOnServer, removeUserlikesOnServer); 
+        addCard(createdCard, cardList);
+    });
+})
+.catch(err => {
+    console.error(err);
 });
