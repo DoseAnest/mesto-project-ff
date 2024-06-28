@@ -13,25 +13,20 @@ const hideInputError = (settings, formEl, inputSelector) => {
 };
 
 const checkInputValidity = (settings, formEl, inputSelector) => {
-    let isCustomRulesValid = true;
     let errorMessage = inputSelector.validationMessage;
-    
-    if (!inputSelector.value.match(settings.rules[inputSelector.name])) {
-        isCustomRulesValid = false;
+    if (inputSelector.validity.patternMismatch) {
         errorMessage = inputSelector.getAttribute('data-error-message'); 
     }
 
-    if (!inputSelector.validity.valid || !isCustomRulesValid) {
+    if (!inputSelector.validity.valid) {
         showInputError(settings, formEl, inputSelector, errorMessage);
-        return false;
     } else {
         hideInputError(settings, formEl, inputSelector);
-        return true;
     };
 };
 
-const toggleButtonState = (settings, submitButtonSelector, formEl, inputList) => {
-    if(hasInvalidInput(settings, formEl, inputList)) {
+const toggleButtonState = (settings, submitButtonSelector, inputList) => {
+    if(hasInvalidInput(inputList)) {
         submitButtonSelector.classList.add(settings.inactiveButtonClass);
         submitButtonSelector.disabled = true;
     } else {
@@ -40,9 +35,9 @@ const toggleButtonState = (settings, submitButtonSelector, formEl, inputList) =>
     };
 };
 
-const hasInvalidInput = (settings, formEl, inputList) => {
+const hasInvalidInput = (inputList) => {
     return inputList.some((inputSelector) => {
-        return !checkInputValidity(settings, formEl, inputSelector);
+        return !inputSelector.validity.valid;
     });
 };
 
@@ -52,7 +47,8 @@ const setEventListeners = (settings, formEl) => {
 
     inputList.forEach((inputSelector) => {
         inputSelector.addEventListener('input', function () {
-            toggleButtonState(settings, submitButtonSelector, formEl, inputList);
+            checkInputValidity(settings, formEl, inputSelector);
+            toggleButtonState(settings, submitButtonSelector, inputList);
         });
     });
 };
@@ -61,7 +57,7 @@ const clearValidation = (settings, formEl) => {
     const inputList = Array.from(formEl.querySelectorAll(settings.inputSelector));
     const submitButtonSelector = formEl.querySelector(settings.submitButtonSelector);
 
-    toggleButtonState(settings, submitButtonSelector, formEl, inputList);
+    toggleButtonState(settings, submitButtonSelector, inputList);
 
     inputList.forEach((inputSelector) => {
         hideInputError(settings, formEl, inputSelector);

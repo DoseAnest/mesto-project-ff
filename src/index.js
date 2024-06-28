@@ -6,13 +6,13 @@ import {editProfile} from './scripts/components/editProfile.js'
 import {enableValidation, clearValidation} from './scripts//utils/validation.js';
 import {
     addUserCardOnServer, 
-    renderUserProfileOnServer, 
+    updateUSerProfileOnServer, 
     getUserInfoByServer, 
     getCardInfoByServer,
     removeUserCardOnServer,
     addUserlikesInfoOnServer,
     removeUserlikesOnServer,
-    renderUserAvatarOnServer
+    updateUserAvatarOnServer
 } from './scripts/components/api.js'
 
 
@@ -45,6 +45,9 @@ const popupTypeProfileAvatarEdit = document.querySelector('.popup_type_profile_a
 const profileImageEl = document.querySelector('.profile__image');
 const inputProfileLinkImage = forms.avatar.link;
 
+const saveBtnText = 'Сохранить';
+const saveBtnTextLoading = 'Сохранение...';
+
 const validationSettings = {
     formSelector: '.popup__form',
     inputSelector: '.popup__input',
@@ -52,19 +55,7 @@ const validationSettings = {
     inactiveButtonClass: 'popup__button_disabled',
     inputErrorClass: 'popup__input_type_error',
     errorClass: 'popup__error_visible',
-    rules: {
-        name: /^[a-zA-Zа-яА-ЯёЁ\s-]*$/,
-        description: /^[a-zA-Zа-яА-ЯёЁ\s-]*$/,
-        'place-name': /^[a-zA-Zа-яА-ЯёЁ\s-]*$/,
-    }
 };
-export const config = {
-    baseUrl: 'https://nomoreparties.co/v1/wff-cohort-11',
-    headers: {
-      authorization: 'eed23ad5-f826-4f84-8c2d-d969b17f26f1',
-      'Content-Type': 'application/json'
-    }
-  };
 
 let userId
 
@@ -106,18 +97,19 @@ popups.forEach(popup => {
 forms.profile.addEventListener('submit', function (evt) {
     evt.preventDefault();
     const profileBtnEl = forms.profile.querySelector('.popup__button');
-    profileBtnEl.textContent = profileBtnEl.textContent + '...';
-    renderUserProfileOnServer({
+    profileBtnEl.textContent = saveBtnTextLoading;
+    updateUSerProfileOnServer({
         name: inputNameFormProfile.value,
         about: inputDescriptionFormProfile.value
     })
-    .then(() => {
-        editProfile( inputNameFormProfile, inputDescriptionFormProfile, profileTitleEl, profileDescriptionEl);
+    .then((res) => {
+        editProfile(res.name, res.about, profileTitleEl, profileDescriptionEl);
         forms.profile.reset();
         closePopup(popupTypeEdit);
     })
+    .catch(console.error)
     .finally(()=> {
-        profileBtnEl.textContent = 'Сохранить';
+        profileBtnEl.textContent = saveBtnText;
     })
 });
 
@@ -125,28 +117,30 @@ forms.profile.addEventListener('submit', function (evt) {
 forms.card.addEventListener('submit', function(evt) {
     evt.preventDefault();
     const cardBntEl = forms.card.querySelector('.popup__button');
-    cardBntEl.textContent = cardBntEl.textContent + '...';
+    cardBntEl.textContent = saveBtnTextLoading;
     addUserCardOnServer({
         link: inputLinkFormNewCard.value, 
         name: inputNameFormNewCard.value
-    }).then((res) => {
-        return res.json()
     })
     .then((res) => { 
-        const newCard = createCard({
-            link: res.link, 
-            name: res.name,
-            likes: res.likes,
-            owner: res.owner,
-            cardId: res._id
-        }, removeCard, templateCard, openPopupFullImage, userId, removeUserCardOnServer, addUserlikesInfoOnServer, removeUserlikesOnServer);
+        const newCard = createCard(
+            res, 
+            removeCard, 
+            templateCard, 
+            openPopupFullImage, 
+            userId, 
+            removeUserCardOnServer, 
+            addUserlikesInfoOnServer, 
+            removeUserlikesOnServer
+        );
         addCard(newCard, cardList);
         forms.card.reset();
         clearValidation(validationSettings, forms.card);
         closePopup(popupTypeNewCard);
     })
+    .catch(console.error)
     .finally(()=> {
-        cardBntEl.textContent = 'Сохранить';
+        cardBntEl.textContent = saveBtnText;
     })
 });
 
@@ -162,17 +156,18 @@ buttonProfileAvatarEdit.addEventListener('click', function() {
 forms.avatar.addEventListener('submit', function(evt) {
     evt.preventDefault();
     const avatarBntEl = forms.avatar.querySelector('.popup__button');
-    avatarBntEl.textContent = avatarBntEl.textContent + '...';
-    renderUserAvatarOnServer({
+    avatarBntEl.textContent = saveBtnTextLoading;
+    updateUserAvatarOnServer({
         avatar: inputProfileLinkImage.value
     })
-    .then(()=> {
-        editAvatarProfile(inputProfileLinkImage.value);
+    .then((res)=> {
+        editAvatarProfile(res.avatar);
         forms.avatar.reset();
         closePopup(popupTypeProfileAvatarEdit);
     })
+    .catch(console.error)
     .finally(()=> {
-        avatarBntEl.textContent = 'Сохранить';
+        avatarBntEl.textContent = saveBtnText;
     })
 });
 
@@ -187,17 +182,22 @@ Promise.all([
     getUserInfoByServer(),
     getCardInfoByServer()
 ])
-.then((responses)=> {
-    const userInfoResponse = responses[0];
-    renderProfile(userInfoResponse);
-    userId = userInfoResponse._id;
+.then(([userInfo, cards])=> {
+    renderProfile(userInfo);
+    userId = userInfo._id;
 
-    const cardInfoResponse = responses[1];
-    cardInfoResponse.reverse().forEach(function({link, name, likes, owner, _id}) { 
-        const createdCard = createCard({link, name, likes, owner, cardId: _id}, removeCard, templateCard, openPopupFullImage, userId, removeUserCardOnServer, addUserlikesInfoOnServer, removeUserlikesOnServer); 
+    cards.reverse().forEach(function(card) { 
+        const createdCard = createCard(
+            card, 
+            removeCard, 
+            templateCard, 
+            openPopupFullImage, 
+            userId, 
+            removeUserCardOnServer, 
+            addUserlikesInfoOnServer, 
+            removeUserlikesOnServer
+        ); 
         addCard(createdCard, cardList);
     });
 })
-.catch(err => {
-    console.error(err);
-});
+.catch(console.error);
